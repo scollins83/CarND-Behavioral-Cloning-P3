@@ -388,7 +388,6 @@ def generate_training_data_by_batch(center_images, left_images, right_images, me
         batch_images = np.zeros((batch_size, height, width, channels))
         batch_measurements = np.zeros(batch_size)
 
-        # TODO: Figure out, do I shuffle beforehand? Also, do I... yeah, do I count the batch size as part of the images I've got?
         for batch_index in range(0, ((len(measurements) // batch_size) - 1)):
             starting_index_for_batch = batch_index * batch_size
             ending_index_for_batch = starting_index_for_batch + batch_size
@@ -411,23 +410,36 @@ def generate_training_data_by_batch(center_images, left_images, right_images, me
                 index_images = []
                 index_measurements = []
 
-                center_images, center_measurements = augment_image(batch_center[i], 'center', batch_measurements[i])
-                [index_images.append(img) for img in center_images]
-                [index_measurements.append(mmt) for mmt in center_measurements]
+                try:
+                    center_images, center_measurements = augment_image(batch_center[i], 'center', batch_measurements[i])
+                    [index_images.append(img) for img in center_images]
+                    [index_measurements.append(mmt) for mmt in center_measurements]
+                except IndexError:
+                    pass
 
-                left_images, left_measurements = augment_image(batch_left[i], 'left', batch_measurements[i])
-                [index_images.append(img) for img in left_images]
-                [index_measurements.append(mmt) for mmt in left_measurements]
+                # TODO: Troubleshoot why this is still having a problem.
+                try:
+                    left_images, left_measurements = augment_image(batch_left[i], 'left', batch_measurements[i])
+                    [index_images.append(img) for img in left_images]
+                    [index_measurements.append(mmt) for mmt in left_measurements]
+                except IndexError:
+                    pass
 
-                right_images, right_measurements = augment_image(batch_right[i], 'right', batch_measurements[i])
-                [index_images.append(img) for img in right_images]
-                [index_measurements.append(mmt) for mmt in right_measurements]
+                try:
+                    right_images, right_measurements = augment_image(batch_right[i], 'right', batch_measurements[i])
+                    [index_images.append(img) for img in right_images]
+                    [index_measurements.append(mmt) for mmt in right_measurements]
+                except IndexError:
+                    pass
 
                 # Pick a random image out of each of the augmented images. Keeps the batch size in check.
-                random_index = np.random.randint(len(index_measurements))
+                try:
+                    random_index = np.random.randint(len(index_measurements))
 
-                final_batch_images.append(index_images[random_index])
-                final_batch_measurements.append(index_measurements[random_index])
+                    final_batch_images.append(index_images[random_index])
+                    final_batch_measurements.append(index_measurements[random_index])
+                except ValueError:
+                    pass
 
         yield batch_images, batch_measurements
 
@@ -458,7 +470,7 @@ if __name__ == '__main__':
                                                      crop_height=64, crop_width=64) for img in left_images]
     right_images = [crop_image(img, horizon_divisor=5, hood_pixels=25,
                                                      crop_height=64, crop_width=64) for img in right_images]
-
+    # TODO: Randomize the augmentation here, rather than trying to do that in the generator itself. 
     # Designate validation
     validation_index = int(len(measurements) * .2)
     center_images_valid = center_images[-validation_index:]
@@ -493,6 +505,7 @@ if __name__ == '__main__':
                                                         batch_size=config['batch_size'])
     #valid_gen = generate_training_data_by_batch(center_images_valid, left_images_valid, right_images_valid,
                                                 #measurements_valid, batch_size=1)
+    # TODO: Shuffle?
     model.fit_generator(train_gen, samples_per_epoch=(len(center_images) // config['batch_size']),
                         nb_epoch=config['epochs']) #, validation_data=valid_gen, nb_val_samples=4)
 
