@@ -389,6 +389,7 @@ def generate_from_lines(lines, old_root, new_root, side_adjustment, batch_size=3
                 images.append(f_img)
                 measurements.append(f_mmt)
 
+
                 f_img, f_mmt = flip_image_and_measurement(right, (measurement - side_adjustment))
                 images.append(f_img)
                 measurements.append(f_mmt)
@@ -456,6 +457,7 @@ if __name__ == '__main__':
     logger.info("Getting log lines...")
     log_paths = get_file_list(config['input_path'])
     lines = []
+
     #[lines.append([path, get_log_lines(path)]) for path in log_paths]
     for path in log_paths:
         [lines.append(line) for line in get_log_lines(path)]
@@ -500,6 +502,7 @@ if __name__ == '__main__':
     model.fit_generator(train_generator, samples_per_epoch=len(lines_train), nb_epoch=config['epochs'],
                         validation_data=validation_generator, nb_val_samples=len(lines_test), callbacks=callbacks,
                         nb_worker=3, nb_val_worker=2)
+
 
     if config['output_path'].endswith('.h5'):
         model.save(config['output_path'])
