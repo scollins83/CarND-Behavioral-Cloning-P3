@@ -1,15 +1,18 @@
 {
   "input_path": "/simulator_data",
-  "output_path": "/output/floyd_model_1/model/model.h5",
+  "output_path": "/output/model.h5",
   "loss_function": "mse",
   "epochs": 40,
-  "dropout": 0.25,
-  "use_tensorboard": "False",
+  "use_tensorboard": "True",
   "units": 1,
-  "tensorboard_log_dir": "/output/floyd_model_1/logs",
+  "tensorboard_log_dir": "/output/floyd_rerun_orig_data",
   "old_image_root": "/home/carnd/simulator_data/final_push/",
   "new_image_root": "/simulator_data/",
-  "gpus": 2,
-  "batch_size": 32,
-  "learning_rate": 0.00001
+  "checkpoint_path": "/output",
+  "gpus": 4,
+  "batch_size": 128,
+  "learning_rate": 0.00005,
+  "test_size": 0.2,
+  "dropout_percentage": 0.3,
+  "side_adjustment": 0.35
 }
