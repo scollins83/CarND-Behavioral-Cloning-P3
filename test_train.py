@@ -147,8 +147,45 @@ class SDCSimulationTrain(unittest.TestCase):
         classes = classify_measurements(measurements)
         self.assertListEqual(classes, test_classes)
 
+    def test_get_binary_downsample_indexes(self):
+        measurements = [0.109133927, 0.02888068, -0.009574246, -0.102593028, 0]
+        test_classes = [0, 1, 1, 0, 1]
+        indexes = get_binary_downsample_indexes(measurements, test_classes)
+        self.assertEqual(len(indexes), 4)
 
+    def test_get_binary_downsample_ratio(self):
+        classes = [0, 1, 1, 0, 1]
+        test_ratio = get_binary_downsample_ratio(classes)
+        check_ratio = {0: 2, 1:2}
+        self.assertDictEqual(test_ratio, check_ratio)
 
+    def test_binary_downsample_lines(self):
+        lines = [['center_2017_11_17_10_03_38_323.jpg',
+                  'three_laps_counterclockwise/IMG/left_2017_11_17_10_03_38_323.jpg',
+                  'right_2017_11_17_10_03_38_323.jpg',
+                  '0','0','0','0.109133927'],
+                 ['center_2017_11_17_10_03_38_416.jpg',
+                  'left_2017_11_17_10_03_38_416.jpg',
+                  'right_2017_11_17_10_03_38_416.jpg',
+                  '0', '0', '0', '0.02888068'],
+                 ['center_2017_11_17_10_03_38_512.jpg',
+                  'left_2017_11_17_10_03_38_512.jpg',
+                  'right_2017_11_17_10_03_38_512.jpg',
+                  '0', '0', '0', '-0.009574246'],
+                 ['center_2017_11_17_10_03_38_512.jpg',
+                  'left_2017_11_17_10_03_38_512.jpg',
+                  'right_2017_11_17_10_03_38_512.jpg',
+                  '0', '0', '0', '-0.102593028'],
+                 ['center_2017_11_17_10_03_38_512.jpg',
+                  'left_2017_11_17_10_03_38_512.jpg',
+                  'right_2017_11_17_10_03_38_512.jpg',
+                  '0', '0', '0', '0']]
+        downsampled_lines = binary_downsample_lines(lines)
+        self.assertLessEqual(len(downsampled_lines), len(lines))
+        self.assertEqual(len([line[6] for line in downsampled_lines if (float(line[6]) >= -.1) and
+                              (float(line[6]) <= .1)]),
+                         len([line[6] for line in downsampled_lines if (float(line[6]) < -.1) or
+                              (float(line[6]) > .1)]))
 
 
 if __name__ == '__main__':

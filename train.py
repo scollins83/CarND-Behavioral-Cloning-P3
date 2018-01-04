@@ -20,6 +20,7 @@ import math
 import random
 from keras import backend as k
 from sklearn.utils import shuffle
+from imblearn.under_sampling import RandomUnderSampler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -469,6 +470,44 @@ def classify_measurements(measurements, low=-.1, high=.1):
     return classes
 
 
+def get_binary_downsample_indexes(measurements, classes):
+    """
+
+    :param measurements:
+    :param classes:
+    :return:
+    """
+    ratio = get_binary_downsample_ratio(classes)
+    rus = RandomUnderSampler(ratio=ratio, return_indices=True)
+    mmt_array = np.array(measurements).reshape(-1, 1)
+    _, _, indexes = rus.fit_sample(mmt_array, classes)
+    return indexes
+
+
+def get_binary_downsample_ratio(classes):
+    """
+
+    :param classes:
+    :return:
+    """
+    zeros = len([item for item in classes if item == 0])
+    ones = len([item for item in classes if item == 1])
+    smaller_class = np.minimum(zeros, ones)
+    return {0: smaller_class, 1: smaller_class}
+
+
+def binary_downsample_lines(lines):
+    """
+
+    :param lines:
+    :return:
+    """
+    measurements = get_measurement_list(lines)
+    classes = classify_measurements(measurements)
+    indexes = get_binary_downsample_indexes(measurements, classes)
+    return [lines[index] for index in indexes]
+
+
 if __name__ == '__main__':
 
     # Set TensorFlow logging so it isn't so verbose.
@@ -488,6 +527,11 @@ if __name__ == '__main__':
     for path in log_paths:
         [lines.append(line) for line in get_log_lines(path)]
     logger.info("Number of lines: " + str(len(lines)))
+
+    # Downsample the lines to better balance out the 0-value measurements
+    lines = binary_downsample_lines(lines)
+    logger.info("Number of lines after downsampling: " + str(len(lines)))
+
     # Shuffle the data once
     lines = shuffle_lines(lines)
     logger.info("Number of lines after shuffle: " + str(len(lines)))
