@@ -443,6 +443,32 @@ def generate_full_augment_from_lines(lines, old_root, new_root, side_adjustment,
             yield shuffle(X, y)
 
 
+def get_measurement_list(lines, measurement_position=6):
+    """
+    Gets just the measurements from the lines.
+    :param lines:
+    :return:
+    """
+    return [float(line[measurement_position]) for line in lines]
+
+
+def classify_measurements(measurements, low=-.1, high=.1):
+    """
+
+    :param measurements:
+    :param low:
+    :param high:
+    :return:
+    """
+    classes = []
+    for value in measurements:
+        if value >= low and value <= high:
+            classes.append(1)
+        else:
+            classes.append(0)
+    return classes
+
+
 if __name__ == '__main__':
 
     # Set TensorFlow logging so it isn't so verbose.

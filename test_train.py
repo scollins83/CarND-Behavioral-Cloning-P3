@@ -12,18 +12,22 @@ class SDCSimulationTrain(unittest.TestCase):
 
     def test_load_configuration(self):
         conf_path = 'test/test_configuration.json'
-        tester_configuration = { "use_grid_search": "False",
-                                 "input_path": "test/test_data",
-                                 "output_path": "test/test_model",
-                                 "loss_function": "mse",
-                                 "epochs": 75,
-                                 "dropout": 0.5,
-                                 "use_tensorboard": "True",
-                                 "units": 1,
-                                 "tensorboard_log_dir": "test/test_logs",
-                                 "old_image_root": "test/test_data",
-                                 "new_image_root": "test/test_data"
-                                 }
+        tester_configuration = {"input_path": "test/test_data",
+                                "output_path": "test/test_model",
+                                "loss_function": "mse",
+                                "epochs": 3,
+                                "use_tensorboard": "True",
+                                "units": 1,
+                                "tensorboard_log_dir": "test/test_logs",
+                                "old_image_root": "test/test_data",
+                                "new_image_root": "test/test_data",
+                                "checkpoint_path": "test/test_logs",
+                                "gpus": 1,
+                                "batch_size": 16,
+                                "learning_rate": 0.00005,
+                                "test_size": 0.2,
+                                "dropout_percentage": 0.3,
+                                "side_adjustment": 0.35}
         loaded_configuration = load_config(conf_path)
         self.assertDictEqual(loaded_configuration, tester_configuration)
 
@@ -42,8 +46,6 @@ class SDCSimulationTrain(unittest.TestCase):
         reference_value = '30.19097'
         self.assertEqual(test_lines[1][1][1][6], reference_value)
 
-    def test_get_measurements_and_measurements(self):
-        pass
 
     def test_augment_brightness_camera_images(self):
         image_path = 'test/test_data/inside_in_grass_fast/IMG/center_2017_11_17_10_08_33_895.jpg'
@@ -110,6 +112,7 @@ class SDCSimulationTrain(unittest.TestCase):
         self.assertEqual(cropped_image.shape[1], crop_width)
         self.assertEqual(cropped_image.shape[2], 3)
 
+    @unittest.skip
     def test_pick_random_vantage_point(self):
         # Line data goes in
         viewpoint = pick_random_vantage_point()
@@ -119,7 +122,33 @@ class SDCSimulationTrain(unittest.TestCase):
     @unittest.skip
     def test_generate_train_by_batch(self):
         batch_size = 32
-        # TODO: Figure out how to test the generator
+        # TODO: Figure out how to test the generator-- maybe a mock?
+
+    def test_get_measurement_list(self):
+        lines = [['center_2017_11_17_10_03_38_323.jpg',
+                  'three_laps_counterclockwise/IMG/left_2017_11_17_10_03_38_323.jpg',
+                  'right_2017_11_17_10_03_38_323.jpg',
+                  '0','0','0','0.009133927'],
+                 ['center_2017_11_17_10_03_38_416.jpg',
+                  'left_2017_11_17_10_03_38_416.jpg',
+                  'right_2017_11_17_10_03_38_416.jpg',
+                  '0', '0', '0', '0.02888068'],
+                 ['center_2017_11_17_10_03_38_512.jpg',
+                  'left_2017_11_17_10_03_38_512.jpg',
+                  'right_2017_11_17_10_03_38_512.jpg',
+                  '0', '0', '0', '0.009574246']]
+        test_measurements = [0.009133927, 0.02888068, 0.009574246]
+        measurements = get_measurement_list(lines)
+        self.assertListEqual(measurements, test_measurements)
+
+    def test_classify_measurements(self):
+        measurements = [0.109133927, 0.02888068, -0.009574246, -0.102593028, 0]
+        test_classes = [0, 1, 1, 0, 1]
+        classes = classify_measurements(measurements)
+        self.assertListEqual(classes, test_classes)
+
+
+
 
 
 if __name__ == '__main__':
