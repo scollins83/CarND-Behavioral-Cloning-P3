@@ -579,8 +579,8 @@ if __name__ == '__main__':
                                                config['side_adjustment'], config['batch_size'])
 
     model.fit_generator(train_generator, samples_per_epoch=len(lines_train), nb_epoch=config['epochs'],
-                        validation_data=validation_generator, nb_val_samples=len(lines_test), callbacks=callbacks)\
-                        # ,nb_worker=3, nb_val_worker=2)
+                        validation_data=validation_generator, nb_val_samples=len(lines_test), callbacks=callbacks,
+                        nb_worker=3, nb_val_worker=2)
 
 
     if config['output_path'].endswith('.h5'):
