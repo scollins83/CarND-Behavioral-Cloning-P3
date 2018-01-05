@@ -24,6 +24,8 @@ from imblearn.under_sampling import RandomUnderSampler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+tfl = logging.getLogger('tensorflow')
+tfl.setLevel(logging.ERROR)
 
 
 def parse_args(arguments):
@@ -35,7 +37,7 @@ def parse_args(arguments):
     parser = argparse.ArgumentParser(description="Trains a behavioral cloning model from a given training file set.")
     parser.add_argument('-c', '--configuration', help="File path configuration file", required=True,
                         dest='config')
-    parser.add_argument('-l', '--logdir', help="Tensorboard log directory", dest='log_dir')
+    parser.add_argument('-l', '--logdir', help="Tensorboard log directory", dest='log_dir', required=True)
 
     return vars(parser.parse_args(arguments))
 
@@ -478,13 +480,14 @@ def get_binary_downsample_indexes(measurements, classes):
     :return:
     """
     ratio = get_binary_downsample_ratio(classes)
+    #logger.info(ratio)
     rus = RandomUnderSampler(ratio=ratio, return_indices=True)
     mmt_array = np.array(measurements).reshape(-1, 1)
     _, _, indexes = rus.fit_sample(mmt_array, classes)
     return indexes
 
 
-def get_binary_downsample_ratio(classes):
+def get_binary_downsample_ratio(classes, pct_keep_dominant=.8):
     """
 
     :param classes:
@@ -492,8 +495,10 @@ def get_binary_downsample_ratio(classes):
     """
     zeros = len([item for item in classes if item == 0])
     ones = len([item for item in classes if item == 1])
-    smaller_class = np.minimum(zeros, ones)
-    return {0: smaller_class, 1: smaller_class}
+    if zeros >= ones:
+        return {0: zeros, 1: ones}
+    else:
+        return {0: zeros, 1: int(ones*pct_keep_dominant)}
 
 
 def binary_downsample_lines(lines):
@@ -504,8 +509,12 @@ def binary_downsample_lines(lines):
     """
     measurements = get_measurement_list(lines)
     classes = classify_measurements(measurements)
-    indexes = get_binary_downsample_indexes(measurements, classes)
-    return [lines[index] for index in indexes]
+    if len(set(classes)) == 1:
+        return lines
+    else:
+        #logger.info([print(str(measurements[i]) + ' : ' + str(classes[i])) for i in range(len(measurements))])
+        indexes = get_binary_downsample_indexes(measurements, classes)
+        return [lines[index] for index in indexes]
 
 
 if __name__ == '__main__':
@@ -570,8 +579,8 @@ if __name__ == '__main__':
                                                config['side_adjustment'], config['batch_size'])
 
     model.fit_generator(train_generator, samples_per_epoch=len(lines_train), nb_epoch=config['epochs'],
-                        validation_data=validation_generator, nb_val_samples=len(lines_test), callbacks=callbacks,
-                        nb_worker=3, nb_val_worker=2)
+                        validation_data=validation_generator, nb_val_samples=len(lines_test), callbacks=callbacks)\
+                        # ,nb_worker=3, nb_val_worker=2)
 
 
     if config['output_path'].endswith('.h5'):

@@ -23,7 +23,7 @@ class SDCSimulationTrain(unittest.TestCase):
                                 "new_image_root": "test/test_data",
                                 "checkpoint_path": "test/test_logs",
                                 "gpus": 1,
-                                "batch_size": 16,
+                                "batch_size": 2,
                                 "learning_rate": 0.00005,
                                 "test_size": 0.2,
                                 "dropout_percentage": 0.3,
