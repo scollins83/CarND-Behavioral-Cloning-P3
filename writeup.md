@@ -65,7 +65,7 @@ layers, and four dense layers(model.py lines 117-160)
 
 The layers are set up like this:
 | Layer | Size | Filter | Comment |
-|:-------:|:----:|:------:|:-------:|
+| ------- | ------ | -------- |--------- |
 | Lambda - Normalization | | | Lambda layer to normalize image values. |
 
  
