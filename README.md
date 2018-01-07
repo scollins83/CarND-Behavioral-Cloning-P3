@@ -138,7 +138,7 @@ The final model occurred from a checkpoint taken at Epoch 3.
 Here is the video generated of the car driving a successful lap using the 'video.py' script included with the project.
 Unfortunately, the video files were too large to commit to git gracefully, but I uploaded the videos to youtube.
 
-![alt text][mp4_thumbnail]("https://www.youtube-nocookie.com/embed/tFMG-lT_z2M?rel=0")
+[![alt text][mp4_thumbnail]]("https://www.youtube-nocookie.com/embed/tFMG-lT_z2M?rel=0")
 
 Hyperparameters used, and can be found in file 'local_configuration.json'
 
