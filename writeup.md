@@ -33,7 +33,9 @@ The goals / steps of this project are the following:
 My project includes the following files:
 * model.py containing the script to create and train the model
 * drive.py for driving the car in autonomous mode
-* model.h5 containing a trained convolution neural network 
+* local_configuration.json for providing hyperparameters, file paths for input and output, and other configurable settings for training the model. 
+* model.hdf5 containing a trained convolution neural network 
+* test_model.py for unit tests for the model.py file
 * writeup.md summarizing the results
 
 #### 2. Submission includes functional code
@@ -44,7 +46,9 @@ python drive.py model.hdf5
 
 #### 3. Submission code is usable and readable
 
-The model.py file contains the code for training and saving the convolution neural network. The file shows the pipeline I used for training and validating the model, and it contains comments to explain how the code works where pertinent.  
+The model.py file contains the code for training and saving the convolution neural network. 
+The file shows the pipeline I used for training and validating the model, and it contains comments 
+to explain how the code works where pertinent.  
   
 I also practiced some of what I've learned about test-driven development in the past year where applicable to develop the training functions, and also attempted to create intuitively named functions. 
 

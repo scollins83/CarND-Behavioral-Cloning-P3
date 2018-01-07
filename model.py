@@ -2,20 +2,16 @@ import csv
 import cv2
 import numpy as np
 from keras.models import Sequential
-from keras.layers import Flatten, Dense, Activation, Dropout, Lambda, Cropping2D
+from keras.layers import Flatten, Dense, Dropout, Lambda, Cropping2D
 import sys
 import argparse
 import os
 from keras.layers.convolutional import Convolution2D
-from keras.layers.pooling import MaxPooling2D
 from keras.optimizers import adam
-from keras.preprocessing.image import ImageDataGenerator
 import json
 from keras.callbacks import TensorBoard
 from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
-from time import time
 import logging
-import copy
 import math
 import random
 from keras import backend as k
@@ -44,7 +40,9 @@ def parse_args(arguments):
 
 def load_config(config_name):
     """
-    loads a json config file and returns a config dictionary
+    Loads a .json configuration file
+    :param config_name: Path for the configuration file.
+    :return: A dict containing the loaded configuration values.
     """
     with open(config_name) as config_file:
         configuration = json.load(config_file)
@@ -53,9 +51,9 @@ def load_config(config_name):
 
 def get_file_list(dir_path):
     """
-    Get list of files
-    :param dir_path:
-    :return: List of driving log files to open.
+    Get list of log files.
+    :param dir_path: File path for .csv log file.
+    :return: List of file paths of driving log files to open.
     """
     file_list = []
     for root, dirs, files in os.walk(dir_path):
@@ -79,11 +77,12 @@ def get_log_lines(path):
 
 def get_path_replacement(path, new_root):
     """
-
-    :param path:
-    :param old_root:
-    :param new_root:
-    :return:
+    Changes absolute file path name for an image noted in the log file to a new 'root'
+    if directory was moved after recording.
+    :param path: File path for an image.
+    :param old_root: Original root to be replaced.
+    :param new_root: New file root to be included.
+    :return: Modified filepath.
     """
     file_tokens = path.split('/')
     end_tokens = file_tokens[-3:]
@@ -93,11 +92,11 @@ def get_path_replacement(path, new_root):
 
 def get_image_and_measurement(line, old_root=None, new_root=None):
     """
-
-    :param line:
-    :param old_root:
-    :param new_root:
-    :return:
+    Gets images and measurements from a log file line.
+    :param line: Line record from a log file.
+    :param old_root: If changing image file paths, original root of the path.
+    :param new_root: If changing image file paths, replacement root of the file path.
+    :return: Center image, left image, right image, and steering measurement.
     """
     center_image_path = line[0]
     left_image_path = line[1]
@@ -118,14 +117,25 @@ def get_image_and_measurement(line, old_root=None, new_root=None):
 def create_model(units=1, loss_function='mse', input_shape=(160, 320, 3),
                  gpus=1, learning_rate=0.001, dropout=0.25):
     """
-    Constructs Keras model object
-    :return: Compiled Keras model object
+    Creates and compiles Convolutional Neural Network model to learn steering angle from images.
+    Implemented from Bojarski, M. et al, NVIDIA, "End to End Learning for Self-Driving
+    Cars", 2016 - https://arxiv.org/pdf/1604.07316v1.pdf, and this was noted by
+    David Silver during the Udacity Self-Driving Car Nanodegree walkthrough for
+    the behavioral cloning project.
+    Before convolutional layers, the model normalizes and then crops the images.
+    :param units: How many units to include in output layer (since this is a regression model,
+    this value will always be 1.
+    :param loss_function: Loss function to use in the model.
+    :param input_shape: Input shape of images
+    :param gpus: Number of GPUs to use, if training on a GPU with multiple cards.
+    :param learning_rate: Learning rate to start with in the model.
+    :param dropout: Percentage of records to dropout after convolutions.
+    :return:
     """
     # NVIDIA Example
     conv_model = Sequential()
     conv_model.add(Lambda(lambda x: (x / 255.0) - 0.5, input_shape=input_shape))
     conv_model.add(Cropping2D(cropping=((70,25),(0,0))))
-    #conv_model.add(Convolution2D(3, 1, 1, input_shape=input_shape))
     conv_model.add(Convolution2D(24, 5, 5, subsample=(2, 2), activation='relu'))
     conv_model.add(Convolution2D(36, 5, 5, subsample=(2, 2), activation='relu'))
     conv_model.add(Convolution2D(48, 5, 5, subsample=(2, 2), activation='relu'))
@@ -133,7 +143,6 @@ def create_model(units=1, loss_function='mse', input_shape=(160, 320, 3),
     conv_model.add(Convolution2D(64, 3, 3, activation='relu'))
     conv_model.add(Dropout(dropout))
     conv_model.add(Flatten())
-    #conv_model.add(Dense(1164, activation='relu'))
     conv_model.add(Dense(100, activation='relu'))
     conv_model.add(Dense(50, activation='relu'))
     conv_model.add(Dense(10, activation='relu'))
@@ -151,24 +160,13 @@ def create_model(units=1, loss_function='mse', input_shape=(160, 320, 3),
     return conv_model
 
 
-def custom_get_params(self):
-    """
-    Function to patch issue in Keras
-    :param self: Sci-kit parameters.
-    :return: Deep copy of the parameters.
-    """
-    res = copy.deepcopy(self.sk_params)
-    res.update({'build_fn': self.build_fn})
-    return res
-
-
 def augment_brightness_camera_images(image):
     """
     Note: Cited from blog post https://chatbotslife.com/using-augmentation-to-mimic-human-driving-496b569760a9,
-    which was a recommended reading by my mentor. Function used to augment my dataset to
+    which was a recommended reading by my Udacity mentor, Rahul. Function used to augment my dataset to
     improve model performance.
     :param image: Image file opened by OpenCV
-    :return:
+    :return: Randomly brightened variation of the input image.
     """
     image1 = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
     image1 = np.array(image1, dtype=np.float64)
@@ -185,12 +183,12 @@ def adjust_side_images(measurement_value, adjustment_offset, side):
     Implementation of usage of left and right images to simulate edge correction,
     as suggested in blog post by Vivek Yadav,
     https://chatbotslife.com/using-augmentation-to-mimic-human-driving-496b569760a9,
-    as suggested reading by my mentor, Rahul. Function used to augment my dataset to improve
+    as suggested reading by my Udacity mentor, Rahul. Function used to augment my dataset to improve
     model performance.
-    :param measurement_value:
-    :param adjustment_offset:
-    :param side:
-    :return:
+    :param measurement_value: Steering measurement value.
+    :param adjustment_offset: Amount to offset side images by.
+    :param side: Image position to determine offset side.
+    :return: Adjusted measurement value.
     """
     if side == 'left':
         return measurement_value + adjustment_offset
@@ -203,11 +201,11 @@ def adjust_side_images(measurement_value, adjustment_offset, side):
 def shift_image_position(image, steering_angle, translation_range):
     """
     Note: Cited from blog post https://chatbotslife.com/using-augmentation-to-mimic-human-driving-496b569760a9,
-    which was a recommended reading by my mentor. Function used to augment my dataset to
+    which was a recommended reading by my Udacity mentor, Rahul. Function used to augment my dataset to
     improve model performance.
-    :param image:
-    :param steering_angle:
-    :param translation_range:
+    :param image: Input image to shift.
+    :param steering_angle: Input steering angle
+    :param translation_range: Range to translate the image.
     :return: translated_image, translated_steering_angle
     """
     translation_x = translation_range * np.random.uniform() - translation_range / 2
@@ -225,7 +223,7 @@ def add_random_shadow(image):
     """
     Adding a random shadow mask to the image.
     Note: Cited from blog post https://chatbotslife.com/using-augmentation-to-mimic-human-driving-496b569760a9,
-    which was a recommended reading by my mentor. Function used to augment my dataset to
+    which was a recommended reading by my Udacity mentor, Rahul. Function used to augment my dataset to
     improve model performance.
     :param image: Image to add a shadow too.
     :return: Image with a random shadow added.
@@ -261,11 +259,11 @@ def flip_image_and_measurement(image, measurement):
     Note: Implementation of usage of left and right images to simulate edge correction,
     as suggested in blog post by Vivek Yadav,
     https://chatbotslife.com/using-augmentation-to-mimic-human-driving-496b569760a9,
-    as suggested reading by my mentor, Rahul. Function used to augment my dataset to improve
+    as suggested reading by my Udacity mentor, Rahul. Function used to augment my dataset to improve
     model performance.
-    :param image:
-    :param measurement:
-    :return:
+    :param image: Image to be flipped
+    :param measurement: Measurement to be flipped
+    :return: Flipped image and measurement.
     """
     return cv2.flip(image, 1), measurement * -1
 
@@ -274,14 +272,14 @@ def crop_image(image, horizon_divisor, hood_pixels, crop_height, crop_width):
     """
     Note: Cited and refactored from blog post
     https://chatbotslife.com/using-augmentation-to-mimic-human-driving-496b569760a9,
-    which was a recommended reading by my mentor. Function used to augment my dataset to
-    improve model performance.
-    :param image:
-    :param horizon_divisor:
-    :param hood_pixels:
-    :param crop_height:
-    :param crop_width:
-    :return:
+    which was a recommended reading by my Udacity mentor, Rahul. Function used to augment
+    my dataset to improve model performance.
+    :param image: Image to be cropped.
+    :param horizon_divisor: Divisor to find the top 1/xth of the image to crop unneeded information above the horizon.
+    :param hood_pixels: Number of pixels to crop out of the bottom of the image to eliminate unneeded information about the hood.
+    :param crop_height: Height to resize the image to after eliminating horizon and hood.
+    :param crop_width: Width to resize the image to after eliminating horizon and hood.
+    :return: Cropped image.
     """
     shape = image.shape
     image = image[math.floor(shape[0] / horizon_divisor):shape[0] - hood_pixels, 0:shape[1]]
@@ -292,12 +290,14 @@ def crop_image(image, horizon_divisor, hood_pixels, crop_height, crop_width):
 
 def full_augment_image(image, position, measurement, side_adjustment, shift_offset=0.004):
     """
-
-    :param image:
-    :param position:
-    :param measurement:
-    :param shift_offset:
-    :return:
+    Takes an image array, it's position, it's measurement, the side adjustment value, and
+    the translation offset desired and provides one copy of the original image plus all
+    seven augmentation functions.
+    :param image: Input image array.
+    :param position: Position of the camera (Center, left or right)
+    :param measurement: Steering angle measurement.
+    :param shift_offset: Amount to offset translation.
+    :return: Augmented images list, augmented measurements list. There should be 8.
     """
     aug_images = []
     aug_measurements = []
@@ -339,9 +339,9 @@ def full_augment_image(image, position, measurement, side_adjustment, shift_offs
 
 def shuffle_lines(shuffle_lines):
     """
-
-    :param shuffle_lines:
-    :return: shuffled_lines
+    Shuffles log record lines.
+    :param shuffle_lines: Log record lines to be shuffled.
+    :return: Shuffled lines
     """
     return_lines = []
 
@@ -354,59 +354,20 @@ def shuffle_lines(shuffle_lines):
     return return_lines
 
 
-def generate_from_lines(lines, old_root, new_root, side_adjustment, batch_size=32):
-    """
-
-    :param lines:
-    :param batch_size:
-    :return:
-    """
-    num_lines = len(lines)
-    while 1:
-        for offset in range(0, num_lines, batch_size):
-            batch_lines = lines[offset:offset+batch_size]
-
-            images = []
-            measurements = []
-
-            for batch_line in batch_lines:
-                center, left, right, measurement = get_image_and_measurement(batch_line,
-                                                                             old_root,
-                                                                             new_root)
-                images.append(center)
-                images.append(left)
-                images.append(right)
-
-                measurements.append(measurement)
-                measurements.append(measurement + side_adjustment)
-                measurements.append(measurement - side_adjustment)
-
-            # Add a flipped version for each image.
-                f_img, f_mmt = flip_image_and_measurement(center, measurement)
-                images.append(f_img)
-                measurements.append(f_mmt)
-
-                f_img, f_mmt = flip_image_and_measurement(left, (measurement + side_adjustment))
-                images.append(f_img)
-                measurements.append(f_mmt)
-
-
-                f_img, f_mmt = flip_image_and_measurement(right, (measurement - side_adjustment))
-                images.append(f_img)
-                measurements.append(f_mmt)
-
-            X = np.array(images)
-            y = np.array(measurements)
-
-            yield shuffle(X, y)
-
-
 def generate_full_augment_from_lines(lines, old_root, new_root, side_adjustment, batch_size=32):
     """
+    Generator to generated full complement of augmented images from log line records.
+    Batch size is divided by 8 to account for the 8 different images returned from
+    the image augmentation function (assuming using 32, 64, 128, 256, etc. as acceptable
+    batch size values).
 
-    :param lines:
-    :param batch_size:
-    :return:
+    Splits lines into batches, opens images and gets measurement from the lines,
+    augments each image (and updates the respective measurement accordingly),
+    and converts the resulting lists of images and measurements to numpy arrays
+    and yields them.
+    :param lines: Log lines to augment.
+    :param batch_size: Batch size for model run.
+    :return: Augmented images and measurements yielded for model training.
     """
     num_lines = len(lines)
     batch_size = int(batch_size//8)
@@ -445,12 +406,11 @@ def generate_full_augment_from_lines(lines, old_root, new_root, side_adjustment,
             yield shuffle(X, y)
 
 
-
 def get_measurement_list(lines, measurement_position=3):
     """
-    Gets just the measurements from the lines.
-    :param lines:
-    :return:
+    Gets only the measurements from the lines.
+    :param lines: Log record lines.
+    :return: List of measurement values from the input log record lines.
     """
     measurement_list = [float(line[measurement_position]) for line in lines]
     logger.info("Measurement average: " + str(np.mean(measurement_list)))
@@ -459,11 +419,13 @@ def get_measurement_list(lines, measurement_position=3):
 
 def classify_measurements(measurements, low=-.1, high=.1):
     """
-
-    :param measurements:
-    :param low:
-    :param high:
-    :return:
+    Obtain class values based on the values of the input measurements.
+    This is then used to downsample dominant value ranges.
+    :param measurements: Steering angle measurements for the all log lines.
+    :param low: Lower bound of class range.
+    :param high: Upper bound of class range.
+    :return: List of class for each measurement- 1 if within specified range,
+    0 if not within that range.
     """
     classes = []
     for value in measurements:
@@ -477,10 +439,13 @@ def classify_measurements(measurements, low=-.1, high=.1):
 
 def get_binary_downsample_indexes(measurements, classes):
     """
-
-    :param measurements:
-    :param classes:
-    :return:
+    Gets a specified ratio and uses that to determine indexes
+    to keep by undersampling the measurements according to class
+    ratios. Undersampling utilizes the imbalanced-learn package's
+    RandomUnderSampler.
+    :param measurements: Steering angle measurements.
+    :param classes: Classes of 1's or 0's pertaining to a dominant range.
+    :return: Indexes for line records to keep as a result of undersampling.
     """
     ratio = get_binary_downsample_ratio(classes)
     logger.info(ratio)
@@ -492,9 +457,13 @@ def get_binary_downsample_indexes(measurements, classes):
 
 def get_binary_downsample_ratio(classes, pct_keep_dominant=.9):
     """
-
-    :param classes:
-    :return:
+    Calculates the downsampling ratio to pass to the imbalanced-learn
+    RandomUnderSampler object. If 1's are not greater than 0's, return
+    the ratio of the class counts as-is. If the number of 1's is greater
+    than the number of zeros, return the full length of the zero class and
+    multiply the 1's class by the percentage to keep of the dominant class.
+    :param classes: List of zeros or ones labeling the measurements
+    :return: Ratio dict to pass to the imbalanced-learrn RandomUnderSampler.
     """
     zeros = len([item for item in classes if item == 0])
     ones = len([item for item in classes if item == 1])
@@ -506,9 +475,11 @@ def get_binary_downsample_ratio(classes, pct_keep_dominant=.9):
 
 def binary_downsample_lines(lines):
     """
-
-    :param lines:
-    :return:
+    Downsample dominant measurements by applying a binary indicator as to
+    whether lines' particular measurements fall into a particular range, and
+    then reducing records from the dominant class.
+    :param lines: Log record lines
+    :return: Log record lines, downsampled to remove some lines from the dominant range.
     """
     measurements = get_measurement_list(lines)
     classes = classify_measurements(measurements)
@@ -530,12 +501,10 @@ if __name__ == '__main__':
     config = load_config(args['config'])
 
     # Load data
-    # lines = get_log_lines(config['input_path'])
     logger.info("Getting log lines...")
     log_paths = get_file_list(config['input_path'])
     lines = []
 
-    #[lines.append([path, get_log_lines(path)]) for path in log_paths]
     for path in log_paths:
         [lines.append(line) for line in get_log_lines(path)]
     logger.info("Number of lines: " + str(len(lines)))
@@ -557,26 +526,34 @@ if __name__ == '__main__':
     logger.info("Validation set of length " + str(len(lines_test)))
     logger.info("Training set of length " + str(len(lines_train)))
 
+    # Create and compile the model
     model = create_model(config['units'], gpus=config['gpus'], learning_rate=config['learning_rate'],
                          dropout=config['dropout_percentage'])
+
+    # Set up checkpointing callback. Keep only the best checkpoints as the model improves.
     ckpt_path = config['checkpoint_path'] + "/augment_NVIDIA_{epoch:02d}_{val_acc:.2f}.hdf5"
     checkpointer = ModelCheckpoint(ckpt_path, verbose=1, save_best_only=True)
 
+    # Set up early stopping callback, to stop training if the validation loss hasn't
+    # improved after 7 epochs.
     early_stopper = EarlyStopping(monitor='val_loss', patience=7)
 
+    # Set up learning rate reducing callback, to decrease the learning rate
+    # if the validation loss plateaus for 4 epochs.
     lr_reducer = ReduceLROnPlateau(monitor='val_loss', factor=.1, patience=4, min_lr=0.00000001)
 
-    # Establish tensorboard
+    # Establish tensorboard callback, if configuration specified that Tensorboard should be used.
+    # Add all callbacks to a list.
     if config["use_tensorboard"] == "True":
         if not os.path.exists(args['log_dir']):
             os.makedirs(args['log_dir'])
         tensorboard = TensorBoard(log_dir=args['log_dir'], histogram_freq=1, write_images=True)
-        #tensorboard = TensorBoard(log_dir=config['tensorboard_log_dir'], histogram_freq=1,
 
         callbacks = [checkpointer, early_stopper, lr_reducer, tensorboard]
     else:
         callbacks = [checkpointer, early_stopper, lr_reducer]
 
+    # Train the model, using training and validation generators to feed in images and measurements.
     logger.info("Training the model...")
 
     train_generator = generate_full_augment_from_lines(lines_train, config['old_image_root'],
@@ -591,11 +568,13 @@ if __name__ == '__main__':
                         validation_data=validation_generator, nb_val_samples=len(lines_test), callbacks=callbacks,
                         nb_worker=3, nb_val_worker=2)
 
-
+    # Save out the final results of the model.
     if config['output_path'].endswith('.h5'):
         model.save(config['output_path'])
     else:
         model.save(config['output_path'] + '.h5')
 
+    # Clear the tensorflow session to try to surpress one minor warning that appears,
+    # and end the program run.
     k.clear_session()
     sys.exit(0)
