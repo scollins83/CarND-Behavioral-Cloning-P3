@@ -31,11 +31,13 @@ The goals / steps of this project are the following:
 #### 1. Submission includes all required files and can be used to run the simulator in autonomous mode
 
 My project includes the following files:
+* test directory: Includes testing configuration, testing examples and other testing artifacts. 
 * model.py containing the script to create and train the model
 * drive.py for driving the car in autonomous mode
 * local_configuration.json for providing hyperparameters, file paths for input and output, and other configurable settings for training the model. 
 * model.hdf5 containing a trained convolution neural network 
-* test_model.py for unit tests for the model.py file
+* test_model.py for unit tests for the model.py file. NOTE: This file is incomplete for this particular project, 
+but as I've learned more and practiced with TDD a bit more, subsequent projects may have more comprehensive testing. 
 * writeup.md summarizing the results
 
 #### 2. Submission includes functional code
@@ -50,19 +52,29 @@ The model.py file contains the code for training and saving the convolution neur
 The file shows the pipeline I used for training and validating the model, and it contains comments 
 to explain how the code works where pertinent.  
   
-I also practiced some of what I've learned about test-driven development in the past year where applicable to develop the training functions, and also attempted to create intuitively named functions. 
+I also practiced some of what I've learned about test-driven development in the past year where 
+applicable to develop the training functions, and also attempted to create intuitively named 
+functions. These should also help with code readability. 
 
 ### Model Architecture and Training Strategy
 
 #### 1. An appropriate model architecture has been employed
 
-My model consists of a convolution neural network with 3x3 filter sizes and depths between 32 and 128 (model.py lines 18-24) 
+My model consists of a convolution neural network with five convolutional
+layers, and four dense layers(model.py lines 117-160) 
 
+The layers are set up like this:
+| Layer | Size | Filter | Comment |
+|:-------:|:----:|:------:|:-------:|
+| Lambda - Normalization | | | Lambda layer to normalize image values. |
+
+ 
 The model includes RELU layers to introduce nonlinearity (code line 20), and the data is normalized in the model using a Keras lambda layer (code line 18). 
 
 ####2. Attempts to reduce overfitting in the model
 
-The model contains dropout layers in order to reduce overfitting (model.py lines 21). 
+The model contains a dropout layer between the convolutional
+ layers and the dense layers in order to reduce overfitting (model.py line 144). 
 
 The model was trained and validated on different data sets to ensure that the model was not overfitting (code line 10-16). The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track.
 
