@@ -89,7 +89,8 @@ The model was trained and validated on different data sets to ensure that the mo
 The model used an adam optimizer, so the learning rate was not tuned manually except for starting learning rate (model.py line 25). Learning rate made a huge difference in how the model performed, and while a final starting learning rate of 0.001 was selected, as I experimented with different augmentation methods, in some cases a starting learning rate of 0.0001 or 0.0005 performed better. 
 Batch size was also critical to model training performance. On my local configuration with no GPU, I used a batch size of 64, but when I trained on floydhub with a GPU, I used a batch size of 256... 512 overflowed the 12GB of memory on the Tesla K80 for their regular GPU instances. 128 worked better than 256 in some cases as different experiments commences, as evidenced by checking training loss vs. validation loss in TensorBoard. 
 
-**Note: Insert pictures here**
+Note: There were over 60 runs total, and I have tensorboard logs for all of those, but displayed are the last 3:
+![alt text][validation_loss_comparisons]
 
 #### 4. Appropriate training data
 
@@ -117,6 +118,7 @@ I noted better loss values as I added more types of augmentation, but the car st
 Rahul had also noted that despite offering lots of clockwise and counter clockwise data, my data was unbalanced with dominance zero and low-steering-angle heavy, and recommended undersampling some of those measurements. Thus, I used the [imbalanced-learn package](https://github.com/scikit-learn-contrib/imbalanced-learn) to proportionately undersample lines with measurements ranging from -.1 to +.1, and only keeping 90% of the data from that range. The functions that accomplish this are called in model.py line 513, and the functions that accomplish this are in model.py lines 409 - 491 and have appropriate unit tests. 
 
 Last but not least, the combination of downsampling and getting my training generator to best handle the data ended up resulting in the final model that completed the lap successfully, and even my 'lightweight' local version of my model trained on my Macbook Pro's CPU was sufficient. Initially, I had set up my generator to apply batch size only to the lines, and by the time I decided to complete all of the augmentation, it was multiplying that by eight for the number images going into each batch. So, I instead modified my 'generate full augment from lines' function (starting model.py line 357) to divide the batch size by eight, which was the number of images used for each line after augmentation (model.py line 373), and that finally resulted in the model that would stay on the track. 
+Another augmentation technique used was offsetting the two side images, left and right, to make them appear to the model as being recovery image. The value I landed on for that was +/- 0.25 depending whether the image was left or right. (idea implemented from Yadav blog post cited earlier). 
 
 Throughout training, I used a TensorBoard callback to monitor training loss and validation loss to check for overfitting. It was through this that I noted while the model was often presented with a small number of epochs (usually 5 - 10 from the Udacity content videos), the convergence of the model appeared to perhaps go past this and didn't appear to split to overfitting until after about 25 epochs in some of the configurations I tried.
 
@@ -147,21 +149,35 @@ Hyperparameters used, and can be found in file 'local_configuration.json'
 
 #### 3. Creation of the Training Set & Training Process
 
-To capture good driving behavior, I first recorded two laps on track one using center lane driving. Here is an example image of center lane driving:
+To capture good driving behavior, on my lightweight dataset on my laptop, I included 3 laps each of center lane driving from both the clockwise and counterclockwise directions. NOTE: I used the keyboard arrows, as I do not have a gaming controller that will work with my laptop. 
 
-![alt text][image2]
+![alt text][center_lane_simple]
 
-I then recorded the vehicle recovering from the left side and right sides of the road back to center so that the vehicle would learn to .... These images show what a recovery looks like starting from ... :
+On my larger dataset on floyd, I also included two laps each of as centered of center lane driving that I could manage on the complex track, in both directions. 
 
-![alt text][image3]
-![alt text][image4]
-![alt text][image5]
+![alt text][center_lane_complex]
 
-Then I repeated this process on track two in order to get more data points.
+From there, I tested the model to see where it was having difficulty on the track. It was having a lot of trouble with recovering from the red line, so I added in an example of recovery from that type of line back to center. These images show what a recovery looks like starting from the edge and ending up back in the middle:
 
-To augment the data sat, I also flipped images and angles thinking that this would ... For example, here is an image that has then been flipped:
+![alt text][red_line_recover_1]
+![alt text][red_line_recover_2]
+![alt text][red_line_recover_3]
 
-![alt text][image6]
+I also perennially had issues with the car missing the first corner after the bridge and going onto the dirt track, so I included three examples of taking that corner successfully. 
+
+![alt text][dirt_track_1]
+![alt text][dirt_track_2]
+![alt text][dirt_track_3]
+
+While that was concerning for leaking information and potential for overfitting, and as such, in the future, I'd probably plan out different types of recoveries and make sure I can keep those proportional to the full lap center lane driving classes and use a track for simulation that was of similar difficulty that the model had never seen before. 
+
+To augment the data sat, I did several things, all implemented from ideas posed in Yadav's blog post cited earlier. 
+
+* Adjusting measurement of side images: This transformed images from the two sides into use as recovery images. The images did not change, but the measurements were offset by +/- 0.25 as discussed earlier in the solution design approach section. 
+
+* Flipping the image from left to right, to boost clockwise and counterclockwise viewpoints:
+
+![alt text][center_lane_simple]
 ![alt text][image7]
 
 Etc ....
