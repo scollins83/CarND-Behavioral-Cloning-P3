@@ -17,12 +17,18 @@ The goals / steps of this project are the following:
 [//]: # (Image References)
 
 [model_architecture]: ./writeup_pictures/model_arch_diagram.jpg "Model Architecture"
-[image2]: ./writeup_pictures/placeholder.png "Grayscaling"
-[image3]: ./examples/placeholder_small.png "Recovery Image"
-[image4]: ./examples/placeholder_small.png "Recovery Image"
-[image5]: ./examples/placeholder_small.png "Recovery Image"
-[image6]: ./examples/placeholder_small.png "Normal Image"
-[image7]: ./examples/placeholder_small.png "Flipped Image"
+[validation_loss_comparisons]: ./writeup_pictures/ValidationLossLastRuns.jpeg "Validation Loss Comparison of Last Runs"
+[center_lane_simple]: ./writeup_pictures/center_line_driving_example "Center Line Simple"
+[center_lane_complex]: ./writeup_pictures/complex_track_center_line.jpg "Center Line Complex"
+[red_line_recover_1]: ./writeup_pictures/red_line_recovery_step_1.jpg "Red Line Recovery Image - Step 1"
+[red_line_recover_2]: ./writeup_pictures/red_line_recovery_step_2.jpg "Red Line Recovery Image - Step 2"
+[red_line_recover_3]: ./writeup_pictures/red_line_recovery_step_1.jpg "Red Line Recovery Image - Step 3"
+[dirt_track_1]: ./writeup_pictures/dirt_track_step_1.jpg "Dirt Track - Step 1"
+[dirt_track_2]: ./writeup_pictures/dirt_track_step_2.jpg "Dirt Track - Step 2"
+[dirt_track_3]: ./writeup_pictures/dirt_track_step_3.jpg "Dirt Track - Step 3"
+[brightness]: ./writeup_pictures/center_brightness.jpg "Brightness"
+[translation]: ./writeup_pictures/center_translation.jpg "Translation"
+[shadow]: ./writeup_pictures/center_shadow.jpg "Shadow"
 
 ## Rubric Points
 ---
@@ -122,6 +128,21 @@ Not wanting to potentially miss out on a better model, but not wanting to spend 
 #### 2. Final Model Architecture
 
 See model architecture section. 
+
+The final model occurred from a checkpoint taken at Epoch 3. 
+
+Hyperparameters used, and can be found in file 'local_configuration.json'
+
+| Hyperparameter | Value   |
+|:--------------:|:-------:|
+| Loss Function  | MSE     |
+| Epochs         | 50 (checkpointed - used at epoch 3, and stopped training at epoch 17) | 
+| GPUs           | 1 locally on CPU, and 4 on floyd |
+| Batch Size     | 64 for final model locally |
+| Learning Rate  | Started at 0.001, and it was still this at epoch 3 for the final model. |
+| Test Set Size  | 20% of downsampled dataset.   |
+| Dropout Percentage | 25% |
+| Side Adjustment | 0.25 |
 
 
 #### 3. Creation of the Training Set & Training Process
