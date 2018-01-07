@@ -83,7 +83,7 @@ The layers are set up like this:
 | 3 - Dense Layer        | 148         | 10      |          | ReLU Activation                         |
 | 4 - Dense Layer        | 149         | 1       |          | No activation (needs to be linear for regression)|
 
-Optimizer: Adam, with starting learning rate of 0.001. 
+Optimizer: Adam, with starting learning rate of 0.001. The model performance was largely dependent on learning rate, so I did tune the starting learning rate, which will be discussed later in this writeup. 
  
  
 #### 2. Attempts to reduce overfitting in the model
@@ -94,7 +94,8 @@ The model was trained and validated on different data sets to ensure that the mo
 
 #### 3. Model parameter tuning
 
-The model used an adam optimizer, so the learning rate was not tuned manually except for starting learning rate (model.py line 25).
+The model used an adam optimizer, so the learning rate was not tuned manually except for starting learning rate (model.py line 25). Learning rate made a huge difference in how the model performed, and while a final starting learning rate of 0.001 was selected, as I experimented with different augmentation methods, in some cases a starting learning rate of 0.0001 or 0.0005 performed better. 
+Batch size was also critical to model training performance. On my local configuration with no GPU, I used a batch size of 64, but when I trained on floydhub with a GPU, I used a batch size of 256... 512 overflowed the 12GB of memory on the Tesla K80 for their regular GPU instances. 128 worked better than 256 in some cases as different experiments commences, as evidenced by checking training loss vs. validation loss in TensorBoard. 
 
 #### 4. Appropriate training data
 
