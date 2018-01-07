@@ -1,6 +1,6 @@
 import unittest
 import os
-from train import *
+from model import *
 import cv2
 
 
@@ -13,7 +13,7 @@ class SDCSimulationTrain(unittest.TestCase):
     def test_load_configuration(self):
         conf_path = 'test/test_configuration.json'
         tester_configuration = {"input_path": "test/test_data",
-                                "output_path": "test/test_model",
+                                "output_path": "test/test_logs/test_model",
                                 "loss_function": "mse",
                                 "epochs": 3,
                                 "use_tensorboard": "True",
@@ -27,7 +27,8 @@ class SDCSimulationTrain(unittest.TestCase):
                                 "learning_rate": 0.00005,
                                 "test_size": 0.2,
                                 "dropout_percentage": 0.3,
-                                "side_adjustment": 0.35}
+                                "side_adjustment": 0.35
+                                }
         loaded_configuration = load_config(conf_path)
         self.assertDictEqual(loaded_configuration, tester_configuration)
 
@@ -138,7 +139,7 @@ class SDCSimulationTrain(unittest.TestCase):
                   'right_2017_11_17_10_03_38_512.jpg',
                   '0', '0', '0', '0.009574246']]
         test_measurements = [0.009133927, 0.02888068, 0.009574246]
-        measurements = get_measurement_list(lines)
+        measurements = get_measurement_list(lines, 6)
         self.assertListEqual(measurements, test_measurements)
 
     def test_classify_measurements(self):
@@ -182,10 +183,6 @@ class SDCSimulationTrain(unittest.TestCase):
                   '0', '0', '0', '0']]
         downsampled_lines = binary_downsample_lines(lines)
         self.assertLessEqual(len(downsampled_lines), len(lines))
-        self.assertEqual(len([line[6] for line in downsampled_lines if (float(line[6]) >= -.1) and
-                              (float(line[6]) <= .1)]),
-                         len([line[6] for line in downsampled_lines if (float(line[6]) < -.1) or
-                              (float(line[6]) > .1)]))
 
 
 if __name__ == '__main__':
