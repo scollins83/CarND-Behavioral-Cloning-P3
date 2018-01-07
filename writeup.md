@@ -16,7 +16,7 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[image1]: ./writeup_pictures/placeholder.png "Model Visualization"
+[model_architecture]: ./writeup_pictures/model_arch_diagram.jpg "Model Architecture"
 [image2]: ./writeup_pictures/placeholder.png "Grayscaling"
 [image3]: ./examples/placeholder_small.png "Recovery Image"
 [image4]: ./examples/placeholder_small.png "Recovery Image"
@@ -67,21 +67,7 @@ The model architecture used was adapted from the one proposed in NVIDIA Corporat
 
 The layers are set up like this:
 
-| Layer                  | Code Line(s)|  Size   | Filter   | Comment                                 |
-|:----------------------:|:-----------:|:-------:|:--------:|:---------------------------------------:|
-| Lambda - Normalization | 137         |         |          | Lambda layer to normalize image values. |
-| Cropping - 2D          | 138         |         |          | Cropped to 25x70                        |
-| 1 - Convolutional Layer| 139         | 24      | 5x5      | ReLU Activation                         |
-| 2 - Convolutional Layer| 140         | 36      | 5x5      | ReLU Activation                         |
-| 3 - Convolutional Layer| 141         | 48      | 5x5      | ReLU Activation                         |
-| 4 - Convolutional Layer| 142         | 64      | 3x3      | ReLU Activation                         |
-| 5 - Convolutional Layer| 143         | 64      | 3x3      | ReLU Activation                         |
-| Dropout                | 144         |         |          | 25% Dropout                             |
-| Flatten                | 145         |         |          | Flatten layers in prepration for dense  |
-| 1 - Dense Layer        | 146         | 100     |          | ReLU Activation                         |
-| 2 - Dense Layer        | 147         | 50      |          | ReLU Activation                         |
-| 3 - Dense Layer        | 148         | 10      |          | ReLU Activation                         |
-| 4 - Dense Layer        | 149         | 1       |          | No activation (needs to be linear for regression)|
+![alt text][model_architecture]
 
 Optimizer: Adam, with starting learning rate of 0.001. The model performance was largely dependent on learning rate, so I did tune the starting learning rate, which will be discussed later in this writeup. 
  
