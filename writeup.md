@@ -63,7 +63,7 @@ functions. These should also help with code readability.
 My model consists of a convolution neural network with five convolutional
 layers, and four dense layers(model.py lines 117-160) 
 
-The model architecture used was adapted from the one proposed in NVIDIA Corporation's Bojarski, M. et al's "End to End Learning for Self-Driving Cars" [paper](https://arxiv.org/pdf/1604.07316v1.pdf "End to End Learning for Self-Driving Cars Paper") and explained in their [blog post](https://devblogs.nvidia.com/parallelforall/deep-learning-self-driving-cars/ "End to End Learning for Self-Driving Cars Blog Post").
+The model architecture used was adapted from the one proposed in NVIDIA Corporation's Bojarski, M. et al's "End to End Learning for Self-Driving Cars" [paper](https://arxiv.org/pdf/1604.07316v1.pdf "End to End Learning for Self-Driving Cars Paper") and explained in their [blog post](https://devblogs.nvidia.com/parallelforall/deep-learning-self-driving-cars/ "End to End Learning for Self-Driving Cars Blog Post"). However, the images were NOT converted to YUV image space (I experimented with that, but it didn't appear to give much lift and the car drove very slightly worse, with no discernable change in validation loss), and the dense layer of 1164 neurons was eliminated because it didn't appear to be necessary (no discernable change in car driving performance). 
 
 The layers are set up like this:
 
@@ -97,11 +97,16 @@ The model was trained and validated on different data sets to ensure that the mo
 The model used an adam optimizer, so the learning rate was not tuned manually except for starting learning rate (model.py line 25). Learning rate made a huge difference in how the model performed, and while a final starting learning rate of 0.001 was selected, as I experimented with different augmentation methods, in some cases a starting learning rate of 0.0001 or 0.0005 performed better. 
 Batch size was also critical to model training performance. On my local configuration with no GPU, I used a batch size of 64, but when I trained on floydhub with a GPU, I used a batch size of 256... 512 overflowed the 12GB of memory on the Tesla K80 for their regular GPU instances. 128 worked better than 256 in some cases as different experiments commences, as evidenced by checking training loss vs. validation loss in TensorBoard. 
 
+**Note: Insert pictures here**
+
 #### 4. Appropriate training data
 
-Training data was chosen to keep the vehicle driving on the road. I used a combination of center lane driving, recovering from the left and right sides of the road ... 
+Training data was chosen to keep the vehicle driving on the road. 
+The local set I used that resulted in the final model had three laps of center lane driving running clockwise on the simple track, three laps running counterclockwise on the simple track, and after seeing how the car handled different situations on the track, I added one recovery sample from the red/white striped line and eventually three samples of sufficiently performing the turn around the first curve after the bridge, so the car would stay on the track rather than veering off onto the dirt path. 
+Interestingly enough, although I did not include samples of driving on the dirt track, in a few of the later model iterations where the car would veer off onto the dirt track, the car had learned sufficiently to be able to navigate the dirt track, and got back on the pavement at the end of it to successfully complete the lap. 
 
-For details about how I created the training data, see the next section. 
+When training on floydhub, my [dataset](https://www.floydhub.com/scollins/datasets/simulator_data "Driving simulation data") included the same samples as the 'lightweight' version from my local setup mentioned in the preceding paragraph without the additional three dirt track corner samples, as they were added to my local sample after uploading the dataset to floyd. Additionally, the larger floyd dataset included: two laps of the complex track clockwise, two laps of the complex track counterclockwise, and recovery samples of the following: outer and inner red/white line, outer and inner bridge, outer and inner normal line, outer and inner curb going onto bridge, and from grass right next to the road from the complex track.
+An earlier version of the floyd dataset also included backups and recovery from all sorts of other situations, including being completely off in the grass, navigating the dirt lane, running into a pole on the complex track, and ending up in the lake, but those proved to be detrimental to training this model so they were removed from the training set. 
 
 ### Training Strategy  
 
