@@ -112,19 +112,26 @@ An earlier version of the floyd dataset also included backups and recovery from 
 
 #### 1. Solution Design Approach
 
-The overall strategy for deriving a model architecture was to ...
+The overall strategy for deriving a model architecture was to start with the very simple model demonstrated in the presentation of the project, and then increase the complexity. I stopped after the NVIDIA architecture mentioned during the project walkthrough video, as it seemed to be sufficient for my needs, although I saw other sufficient architectures noted, particularly in a data augmentation blog post recommended to me by my Udacity mentor Rahul that was written by former Udacity Self-Driving Car Nanodegree alum Vivek Yadav, in his [blog post](https://chatbotslife.com/using-augmentation-to-mimic-human-driving-496b569760a9 "Using augmentation to mimic human driving") "Using Augmentation To Mimic Human Driving". 
 
-My first step was to use a convolution neural network model similar to the ... I thought this model might be appropriate because ...
+In using the initial model presented in the regular Udacity course content, my car started to drive, but drove around in circles or would only go a little way and get off the road and get stuck. 
 
-In order to gauge how well the model was working, I split my image and steering angle data into a training and validation set. I found that my first model had a low mean squared error on the training set but a high mean squared error on the validation set. This implied that the model was overfitting. 
+Then, I added more complex structures, approaching the NVIDIA-proposed architecture. This resulted in the car staying on the road quite nicely, albeit noticably avoiding driving on shadows. However, although the center line driving was usually perfect, the car would invariably (and frustratingly) miss the first curve after the bridge and would drive on the dirt track. As I continued to try to tune and add a few examples of turning that corner successfully to my training set, the model learned to navigate the dirt track 'successfully' and was able to get back on the pavement to finish the lap, but was still going off on the dirt track in the first place. 
 
-To combat the overfitting, I modified the model so that ...
+I asked my Udacity mentor, Rahul, for some assistance, and began experimenting with adding different types of image augmentation. The model did ok and ALMOST rounded the corner after just flipping the image that was presented in the project walkthrough video, but wasn't quite there yet. 
 
-Then I ... 
+I noted better loss values as I added more types of augmentation, but the car still went to the dirt track every time. 
 
-The final step was to run the simulator to see how well the car was driving around track one. There were a few spots where the vehicle fell off the track... to improve the driving behavior in these cases, I ....
+Rahul had also noted that despite offering lots of clockwise and counter clockwise data, my data was unbalanced with dominance zero and low-steering-angle heavy, and recommended undersampling some of those measurements. Thus, I used the [imbalanced-learn package](https://github.com/scikit-learn-contrib/imbalanced-learn) to proportionately undersample lines with measurements ranging from -.1 to +.1, and only keeping 90% of the data from that range. The functions that accomplish this are called in model.py line 513, and the functions that accomplish this are in model.py lines 409 - 491 and have appropriate unit tests. 
 
-At the end of the process, the vehicle is able to drive autonomously around the track without leaving the road.
+Last but not least, the combination of downsampling and getting my training generator to best handle the data ended up resulting in the final model that completed the lap successfully, and even my 'lightweight' local version of my model trained on my Macbook Pro's CPU was sufficient. Initially, I had set up my generator to apply batch size only to the lines, and by the time I decided to complete all of the augmentation, it was multiplying that by eight for the number images going into each batch. So, I instead modified my 'generate full augment from lines' function (starting model.py line 357) to divide the batch size by eight, which was the number of images used for each line after augmentation (model.py line 373), and that finally resulted in the model that would stay on the track. 
+
+Throughout training, I used a TensorBoard callback to monitor training loss and validation loss to check for overfitting. It was through this that I noted while the model was often presented with a small number of epochs (usually 5 - 10 from the Udacity content videos), the convergence of the model appeared to perhaps go past this and didn't appear to split to overfitting until after about 25 epochs in some of the configurations I tried.
+
+Not wanting to potentially miss out on a better model, but not wanting to spend an unnecessary amount of time training either, I ended up setting up additional callbacks:
+* Checkpointing (model.py line 535): I checkpointed the model after each epoch, but only saved the checkpoint if the model improved, guaranteeing I would still have the best model from each improvement point if the epochs really did indeed go too far.
+* Early Stopping (model.py line 539): I included early stopping to stop training the model after 7 epochs of no improvement. 
+* Reduce Learning Rate On Plateau (model.py line 543): While this may have given potential to interfere with the Adam optimizer, I set up the learning rate to reduce by a factor of .1 after the model had not improved for 4 epochs. This seemed to be useful in some configurations I tried, but was not useful in the final model iteration. 
 
 #### 2. Final Model Architecture
 
