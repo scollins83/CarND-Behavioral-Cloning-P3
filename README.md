@@ -30,7 +30,6 @@ The goals / steps of this project are the following:
 [brightness]: ./writeup_pictures/center_brightness.jpg "Brightness"
 [translation]: ./writeup_pictures/center_translation.jpg "Translation"
 [shadow]: ./writeup_pictures/center_shadow.jpg "Shadow"
-[mp4_thumbnail]: ./model_video/2018_01_07_04_17_16_598.jpg "Mp4 video thumbnail"
 
 ## Rubric Points
 ---
@@ -138,8 +137,11 @@ The final model occurred from a checkpoint taken at Epoch 3.
 Here is the video generated of the car driving a successful lap using the 'video.py' script included with the project.
 Unfortunately, the video files were too large to commit to git gracefully, but I uploaded the videos to youtube.
 
-**MP4 Video from Video.py, driving perspective:**
+**MP4 Video from Video.py, driving perspective:**  
 [![alt text](https://i.ytimg.com/vi/tFMG-lT_z2M/3.jpg)](https://www.youtube-nocookie.com/embed/tFMG-lT_z2M?rel=0)
+
+**MOV Video Captured with QuickTime While Watching Lap Complete:**   
+[![alt text](https://i.ytimg.com/vi/0WQtAuD96QA/2.jpg?time=1515356681920)](https://www.youtube-nocookie.com/embed/0WQtAuD96QA?rel=0)
 
 
 Hyperparameters used, and can be found in file 'local_configuration.json'
