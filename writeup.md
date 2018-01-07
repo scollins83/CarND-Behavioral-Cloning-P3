@@ -203,4 +203,4 @@ After downsampling, I randomly shuffled the data set and put 20% of the downsamp
 
 I used this training data for training the model. The validation set helped determine if the model was over or under fitting. The ideal number of epochs ended up being 3 as this facilitated a model that actually stayed on the road, but it looks like while the ideal number of epochs was typically relatively small, it could vary quite a bit depending on model setup and image augmentation. 
 
-In all, this was a really fun but really challenging project!
+In all, this was a really fun but really challenging project! I typically use recurrent neural networks for text analytics, so this was a really interesting change of pace :-) 
