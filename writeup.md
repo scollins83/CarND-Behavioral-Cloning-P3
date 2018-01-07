@@ -18,7 +18,7 @@ The goals / steps of this project are the following:
 
 [model_architecture]: ./writeup_pictures/model_arch_diagram.jpg "Model Architecture"
 [validation_loss_comparisons]: ./writeup_pictures/ValidationLossLastRuns.jpeg "Validation Loss Comparison of Last Runs"
-[center_lane_simple]: ./writeup_pictures/center_line_driving_example "Center Line Simple"
+[center_lane_simple]: ./writeup_pictures/center_line_driving_example.jpg "Center Line Simple"
 [center_lane_complex]: ./writeup_pictures/complex_track_center_line.jpg "Center Line Complex"
 [red_line_recover_1]: ./writeup_pictures/red_line_recovery_step_1.jpg "Red Line Recovery Image - Step 1"
 [red_line_recover_2]: ./writeup_pictures/red_line_recovery_step_2.jpg "Red Line Recovery Image - Step 2"
