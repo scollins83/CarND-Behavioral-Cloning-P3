@@ -64,9 +64,13 @@ My model consists of a convolution neural network with five convolutional
 layers, and four dense layers(model.py lines 117-160) 
 
 The layers are set up like this:
-| Layer | Size | Filter | Comment |
-| ------- | ------ | -------- |--------- |
-| Lambda - Normalization | | | Lambda layer to normalize image values. |
+
+| Layer                  | Size   | Filter   | Comment                                 |
+|:----------------------:|:------:|:--------:|:---------------------------------------:|
+| Lambda - Normalization |        |          | Lambda layer to normalize image values. |
+| Cropping - 2D          | 70,250 | x        |                                         |
+
+
 
  
 The model includes RELU layers to introduce nonlinearity (code line 20), and the data is normalized in the model using a Keras lambda layer (code line 18). 
