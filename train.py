@@ -12,7 +12,7 @@ from keras.optimizers import adam
 from keras.preprocessing.image import ImageDataGenerator
 import json
 from keras.callbacks import TensorBoard
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 from time import time
 import logging
 import copy
@@ -133,10 +133,10 @@ def create_model(units=1, loss_function='mse', input_shape=(160, 320, 3),
     conv_model.add(Convolution2D(64, 3, 3, activation='relu'))
     conv_model.add(Dropout(dropout))
     conv_model.add(Flatten())
-    #conv_model.add(Dense(1164))
-    conv_model.add(Dense(100))
-    conv_model.add(Dense(50))
-    conv_model.add(Dense(10))
+    #conv_model.add(Dense(1164, activation='relu'))
+    conv_model.add(Dense(100, activation='relu'))
+    conv_model.add(Dense(50, activation='relu'))
+    conv_model.add(Dense(10, activation='relu'))
     conv_model.add(Dense(units))
 
     opt = adam(lr=learning_rate)
@@ -302,7 +302,7 @@ def full_augment_image(image, position, measurement, side_adjustment, shift_offs
     aug_images = []
     aug_measurements = []
 
-    measurement = adjust_side_images(measurement, .25, position)
+    measurement = adjust_side_images(measurement, side_adjustment, position)
 
     bright = augment_brightness_camera_images(image)
     shadow = add_random_shadow(image)
@@ -317,25 +317,23 @@ def full_augment_image(image, position, measurement, side_adjustment, shift_offs
     aug_images.append(flipped)
     aug_measurements.append(flipped_mmt)
 
-    if position == 'center':
-        translated, shift_mmt = shift_image_position(image, measurement, shift_offset)
-        bright_shifted, bright_shift_mmt = shift_image_position(bright, measurement, shift_offset)
-        shadow_shifted, shadow_shift_mmt = shift_image_position(shadow, measurement, shift_offset)
-        flipped_shifted, flipped_shift_mmt = shift_image_position(flipped, flipped_mmt, shift_offset)
+    translated, shift_mmt = shift_image_position(image, measurement, shift_offset)
+    bright_shifted, bright_shift_mmt = shift_image_position(bright, measurement, shift_offset)
+    shadow_shifted, shadow_shift_mmt = shift_image_position(shadow, measurement, shift_offset)
+    flipped_shifted, flipped_shift_mmt = shift_image_position(flipped, flipped_mmt, shift_offset)
 
-        aug_images.append(translated)
-        aug_measurements.append(shift_mmt)
+    aug_images.append(translated)
+    aug_measurements.append(shift_mmt)
 
-        aug_images.append(bright_shifted)
-        aug_measurements.append(bright_shift_mmt)
+    aug_images.append(bright_shifted)
+    aug_measurements.append(bright_shift_mmt)
 
-        aug_images.append(shadow_shifted)
-        aug_measurements.append(shadow_shift_mmt)
+    aug_images.append(shadow_shifted)
+    aug_measurements.append(shadow_shift_mmt)
 
-        aug_images.append(flipped_shifted)
-        aug_measurements.append(flipped_shift_mmt)
+    aug_images.append(flipped_shifted)
+    aug_measurements.append(flipped_shift_mmt)
 
-    # So, for non-center, will have 4, and if center, will have 8. So, 12 images per row.
     return aug_images, aug_measurements
 
 
@@ -411,6 +409,7 @@ def generate_full_augment_from_lines(lines, old_root, new_root, side_adjustment,
     :return:
     """
     num_lines = len(lines)
+    batch_size = int(batch_size//8)
     while 1:
         for offset in range(0, num_lines, batch_size):
             batch_lines = lines[offset:offset+batch_size]
@@ -446,13 +445,16 @@ def generate_full_augment_from_lines(lines, old_root, new_root, side_adjustment,
             yield shuffle(X, y)
 
 
-def get_measurement_list(lines, measurement_position=6):
+
+def get_measurement_list(lines, measurement_position=3):
     """
     Gets just the measurements from the lines.
     :param lines:
     :return:
     """
-    return [float(line[measurement_position]) for line in lines]
+    measurement_list = [float(line[measurement_position]) for line in lines]
+    logger.info("Measurement average: " + str(np.mean(measurement_list)))
+    return measurement_list
 
 
 def classify_measurements(measurements, low=-.1, high=.1):
@@ -469,6 +471,7 @@ def classify_measurements(measurements, low=-.1, high=.1):
             classes.append(1)
         else:
             classes.append(0)
+    logger.info("1 classes: " + str(len([x for x in classes if x == 1])))
     return classes
 
 
@@ -480,14 +483,14 @@ def get_binary_downsample_indexes(measurements, classes):
     :return:
     """
     ratio = get_binary_downsample_ratio(classes)
-    #logger.info(ratio)
+    logger.info(ratio)
     rus = RandomUnderSampler(ratio=ratio, return_indices=True)
     mmt_array = np.array(measurements).reshape(-1, 1)
     _, _, indexes = rus.fit_sample(mmt_array, classes)
     return indexes
 
 
-def get_binary_downsample_ratio(classes, pct_keep_dominant=.8):
+def get_binary_downsample_ratio(classes, pct_keep_dominant=.9):
     """
 
     :param classes:
@@ -509,10 +512,10 @@ def binary_downsample_lines(lines):
     """
     measurements = get_measurement_list(lines)
     classes = classify_measurements(measurements)
+    logger.info('Len_Set_Classes: ' + str(len(set(classes))))
     if len(set(classes)) == 1:
         return lines
     else:
-        #logger.info([print(str(measurements[i]) + ' : ' + str(classes[i])) for i in range(len(measurements))])
         indexes = get_binary_downsample_indexes(measurements, classes)
         return [lines[index] for index in indexes]
 
@@ -559,14 +562,20 @@ if __name__ == '__main__':
     ckpt_path = config['checkpoint_path'] + "/augment_NVIDIA_{epoch:02d}_{val_acc:.2f}.hdf5"
     checkpointer = ModelCheckpoint(ckpt_path, verbose=1, save_best_only=True)
 
+    early_stopper = EarlyStopping(monitor='val_loss', patience=7)
+
+    lr_reducer = ReduceLROnPlateau(monitor='val_loss', factor=.1, patience=4, min_lr=0.00000001)
+
     # Establish tensorboard
     if config["use_tensorboard"] == "True":
-        tensorboard = TensorBoard(log_dir=args['log_dir'], histogram_freq=1,
+        if not os.path.exists(args['log_dir']):
+            os.makedirs(args['log_dir'])
+        tensorboard = TensorBoard(log_dir=args['log_dir'], histogram_freq=1, write_images=True)
         #tensorboard = TensorBoard(log_dir=config['tensorboard_log_dir'], histogram_freq=1,
-                                  write_graph=True)
-        callbacks = [checkpointer, tensorboard]
+
+        callbacks = [checkpointer, early_stopper, lr_reducer, tensorboard]
     else:
-        callbacks = [checkpointer]
+        callbacks = [checkpointer, early_stopper, lr_reducer]
 
     logger.info("Training the model...")
 
