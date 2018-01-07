@@ -56,7 +56,7 @@ I also practiced some of what I've learned about test-driven development in the 
 applicable to develop the training functions, and also attempted to create intuitively named 
 functions. These should also help with code readability. 
 
-### Model Architecture and Training Strategy
+### Model Architecture  
 
 #### 1. An appropriate model architecture has been employed
 
@@ -81,30 +81,28 @@ The layers are set up like this:
 | 3 - Dense Layer        | 148         | 10      |          | ReLU Activation                         |
 | 4 - Dense Layer        | 149         | 1       |          | No activation (needs to be linear for regression)|
 
-
+Optimizer: Adam, with starting learning rate of 0.001. 
  
-The model includes RELU layers to introduce nonlinearity (code line 20), and the data is normalized in the model using a Keras lambda layer (code line 18). 
+ 
+#### 2. Attempts to reduce overfitting in the model
 
-####2. Attempts to reduce overfitting in the model
+The model contains a dropout layer between the convolutional layers and the dense layers in order to reduce overfitting. (model.py line 144). 
 
-The model contains a dropout layer between the convolutional
- layers and the dense layers in order to reduce overfitting (model.py line 144). 
+The model was trained and validated on different data sets to ensure that the model was not overfitting (model.py lines 522-525). The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track.
 
-The model was trained and validated on different data sets to ensure that the model was not overfitting (code line 10-16). The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track.
+#### 3. Model parameter tuning
 
-####3. Model parameter tuning
+The model used an adam optimizer, so the learning rate was not tuned manually except for starting learning rate (model.py line 25).
 
-The model used an adam optimizer, so the learning rate was not tuned manually (model.py line 25).
-
-####4. Appropriate training data
+#### 4. Appropriate training data
 
 Training data was chosen to keep the vehicle driving on the road. I used a combination of center lane driving, recovering from the left and right sides of the road ... 
 
 For details about how I created the training data, see the next section. 
 
-###Model Architecture and Training Strategy
+### Training Strategy  
 
-####1. Solution Design Approach
+#### 1. Solution Design Approach
 
 The overall strategy for deriving a model architecture was to ...
 
@@ -120,7 +118,7 @@ The final step was to run the simulator to see how well the car was driving arou
 
 At the end of the process, the vehicle is able to drive autonomously around the track without leaving the road.
 
-####2. Final Model Architecture
+#### 2. Final Model Architecture
 
 The final model architecture (model.py lines 18-24) consisted of a convolution neural network with the following layers and layer sizes ...
 
@@ -128,7 +126,7 @@ Here is a visualization of the architecture (note: visualizing the architecture 
 
 ![alt text][image1]
 
-####3. Creation of the Training Set & Training Process
+#### 3. Creation of the Training Set & Training Process
 
 To capture good driving behavior, I first recorded two laps on track one using center lane driving. Here is an example image of center lane driving:
 
