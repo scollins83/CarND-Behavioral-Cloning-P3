@@ -63,6 +63,8 @@ functions. These should also help with code readability.
 My model consists of a convolution neural network with five convolutional
 layers, and four dense layers(model.py lines 117-160) 
 
+The model architecture used was adapted from the one proposed in NVIDIA Corporation's Bojarski, M. et al's "End to End Learning for Self-Driving Cars" [paper](https://arxiv.org/pdf/1604.07316v1.pdf "End to End Learning for Self-Driving Cars Paper") and explained in their [blog post](https://devblogs.nvidia.com/parallelforall/deep-learning-self-driving-cars/ "End to End Learning for Self-Driving Cars Blog Post").
+
 The layers are set up like this:
 
 | Layer                  | Code Line(s)|  Size   | Filter   | Comment                                 |
