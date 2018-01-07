@@ -1,6 +1,6 @@
 # Behavioral Cloning
 
-## Writeup Template
+## Sara Collins
 
 ---
 
@@ -16,8 +16,8 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[image1]: ./examples/placeholder.png "Model Visualization"
-[image2]: ./examples/placeholder.png "Grayscaling"
+[image1]: ./writeup_pictures/placeholder.png "Model Visualization"
+[image2]: ./writeup_pictures/placeholder.png "Grayscaling"
 [image3]: ./examples/placeholder_small.png "Recovery Image"
 [image4]: ./examples/placeholder_small.png "Recovery Image"
 [image5]: ./examples/placeholder_small.png "Recovery Image"
@@ -56,57 +56,84 @@ I also practiced some of what I've learned about test-driven development in the 
 applicable to develop the training functions, and also attempted to create intuitively named 
 functions. These should also help with code readability. 
 
-### Model Architecture and Training Strategy
+### Model Architecture  
 
 #### 1. An appropriate model architecture has been employed
 
 My model consists of a convolution neural network with five convolutional
 layers, and four dense layers(model.py lines 117-160) 
 
+The model architecture used was adapted from the one proposed in NVIDIA Corporation's Bojarski, M. et al's "End to End Learning for Self-Driving Cars" [paper](https://arxiv.org/pdf/1604.07316v1.pdf "End to End Learning for Self-Driving Cars Paper") and explained in their [blog post](https://devblogs.nvidia.com/parallelforall/deep-learning-self-driving-cars/ "End to End Learning for Self-Driving Cars Blog Post"). However, the images were NOT converted to YUV image space (I experimented with that, but it didn't appear to give much lift and the car drove very slightly worse, with no discernable change in validation loss), and the dense layer of 1164 neurons was eliminated because it didn't appear to be necessary (no discernable change in car driving performance). 
+
 The layers are set up like this:
-| Layer | Size | Filter | Comment |
-| ------- | ------ | -------- |--------- |
-| Lambda - Normalization | | | Lambda layer to normalize image values. |
 
+| Layer                  | Code Line(s)|  Size   | Filter   | Comment                                 |
+|:----------------------:|:-----------:|:-------:|:--------:|:---------------------------------------:|
+| Lambda - Normalization | 137         |         |          | Lambda layer to normalize image values. |
+| Cropping - 2D          | 138         |         |          | Cropped to 25x70                        |
+| 1 - Convolutional Layer| 139         | 24      | 5x5      | ReLU Activation                         |
+| 2 - Convolutional Layer| 140         | 36      | 5x5      | ReLU Activation                         |
+| 3 - Convolutional Layer| 141         | 48      | 5x5      | ReLU Activation                         |
+| 4 - Convolutional Layer| 142         | 64      | 3x3      | ReLU Activation                         |
+| 5 - Convolutional Layer| 143         | 64      | 3x3      | ReLU Activation                         |
+| Dropout                | 144         |         |          | 25% Dropout                             |
+| Flatten                | 145         |         |          | Flatten layers in prepration for dense  |
+| 1 - Dense Layer        | 146         | 100     |          | ReLU Activation                         |
+| 2 - Dense Layer        | 147         | 50      |          | ReLU Activation                         |
+| 3 - Dense Layer        | 148         | 10      |          | ReLU Activation                         |
+| 4 - Dense Layer        | 149         | 1       |          | No activation (needs to be linear for regression)|
+
+Optimizer: Adam, with starting learning rate of 0.001. The model performance was largely dependent on learning rate, so I did tune the starting learning rate, which will be discussed later in this writeup. 
  
-The model includes RELU layers to introduce nonlinearity (code line 20), and the data is normalized in the model using a Keras lambda layer (code line 18). 
+ 
+#### 2. Attempts to reduce overfitting in the model
 
-####2. Attempts to reduce overfitting in the model
+The model contains a dropout layer between the convolutional layers and the dense layers in order to reduce overfitting. (model.py line 144). 
 
-The model contains a dropout layer between the convolutional
- layers and the dense layers in order to reduce overfitting (model.py line 144). 
+The model was trained and validated on different data sets to ensure that the model was not overfitting (model.py lines 522-525). The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track.
 
-The model was trained and validated on different data sets to ensure that the model was not overfitting (code line 10-16). The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track.
+#### 3. Model parameter tuning
 
-####3. Model parameter tuning
+The model used an adam optimizer, so the learning rate was not tuned manually except for starting learning rate (model.py line 25). Learning rate made a huge difference in how the model performed, and while a final starting learning rate of 0.001 was selected, as I experimented with different augmentation methods, in some cases a starting learning rate of 0.0001 or 0.0005 performed better. 
+Batch size was also critical to model training performance. On my local configuration with no GPU, I used a batch size of 64, but when I trained on floydhub with a GPU, I used a batch size of 256... 512 overflowed the 12GB of memory on the Tesla K80 for their regular GPU instances. 128 worked better than 256 in some cases as different experiments commences, as evidenced by checking training loss vs. validation loss in TensorBoard. 
 
-The model used an adam optimizer, so the learning rate was not tuned manually (model.py line 25).
+**Note: Insert pictures here**
 
-####4. Appropriate training data
+#### 4. Appropriate training data
 
-Training data was chosen to keep the vehicle driving on the road. I used a combination of center lane driving, recovering from the left and right sides of the road ... 
+Training data was chosen to keep the vehicle driving on the road. 
+The local set I used that resulted in the final model had three laps of center lane driving running clockwise on the simple track, three laps running counterclockwise on the simple track, and after seeing how the car handled different situations on the track, I added one recovery sample from the red/white striped line and eventually three samples of sufficiently performing the turn around the first curve after the bridge, so the car would stay on the track rather than veering off onto the dirt path. 
+Interestingly enough, although I did not include samples of driving on the dirt track, in a few of the later model iterations where the car would veer off onto the dirt track, the car had learned sufficiently to be able to navigate the dirt track, and got back on the pavement at the end of it to successfully complete the lap. 
 
-For details about how I created the training data, see the next section. 
+When training on floydhub, my [dataset](https://www.floydhub.com/scollins/datasets/simulator_data "Driving simulation data") included the same samples as the 'lightweight' version from my local setup mentioned in the preceding paragraph without the additional three dirt track corner samples, as they were added to my local sample after uploading the dataset to floyd. Additionally, the larger floyd dataset included: two laps of the complex track clockwise, two laps of the complex track counterclockwise, and recovery samples of the following: outer and inner red/white line, outer and inner bridge, outer and inner normal line, outer and inner curb going onto bridge, and from grass right next to the road from the complex track.
+An earlier version of the floyd dataset also included backups and recovery from all sorts of other situations, including being completely off in the grass, navigating the dirt lane, running into a pole on the complex track, and ending up in the lake, but those proved to be detrimental to training this model so they were removed from the training set. 
 
-###Model Architecture and Training Strategy
+### Training Strategy  
 
-####1. Solution Design Approach
+#### 1. Solution Design Approach
 
-The overall strategy for deriving a model architecture was to ...
+The overall strategy for deriving a model architecture was to start with the very simple model demonstrated in the presentation of the project, and then increase the complexity. I stopped after the NVIDIA architecture mentioned during the project walkthrough video, as it seemed to be sufficient for my needs, although I saw other sufficient architectures noted, particularly in a data augmentation blog post recommended to me by my Udacity mentor Rahul that was written by former Udacity Self-Driving Car Nanodegree alum Vivek Yadav, in his [blog post](https://chatbotslife.com/using-augmentation-to-mimic-human-driving-496b569760a9 "Using augmentation to mimic human driving") "Using Augmentation To Mimic Human Driving". 
 
-My first step was to use a convolution neural network model similar to the ... I thought this model might be appropriate because ...
+In using the initial model presented in the regular Udacity course content, my car started to drive, but drove around in circles or would only go a little way and get off the road and get stuck. 
 
-In order to gauge how well the model was working, I split my image and steering angle data into a training and validation set. I found that my first model had a low mean squared error on the training set but a high mean squared error on the validation set. This implied that the model was overfitting. 
+Then, I added more complex structures, approaching the NVIDIA-proposed architecture. This resulted in the car staying on the road quite nicely, albeit noticably avoiding driving on shadows. However, although the center line driving was usually perfect, the car would invariably (and frustratingly) miss the first curve after the bridge and would drive on the dirt track. As I continued to try to tune and add a few examples of turning that corner successfully to my training set, the model learned to navigate the dirt track 'successfully' and was able to get back on the pavement to finish the lap, but was still going off on the dirt track in the first place. 
 
-To combat the overfitting, I modified the model so that ...
+I asked my Udacity mentor, Rahul, for some assistance, and began experimenting with adding different types of image augmentation. The model did ok and ALMOST rounded the corner after just flipping the image that was presented in the project walkthrough video, but wasn't quite there yet. 
 
-Then I ... 
+I noted better loss values as I added more types of augmentation, but the car still went to the dirt track every time. 
 
-The final step was to run the simulator to see how well the car was driving around track one. There were a few spots where the vehicle fell off the track... to improve the driving behavior in these cases, I ....
+Rahul had also noted that despite offering lots of clockwise and counter clockwise data, my data was unbalanced with dominance zero and low-steering-angle heavy, and recommended undersampling some of those measurements. Thus, I used the [imbalanced-learn package](https://github.com/scikit-learn-contrib/imbalanced-learn) to proportionately undersample lines with measurements ranging from -.1 to +.1, and only keeping 90% of the data from that range. The functions that accomplish this are called in model.py line 513, and the functions that accomplish this are in model.py lines 409 - 491 and have appropriate unit tests. 
 
-At the end of the process, the vehicle is able to drive autonomously around the track without leaving the road.
+Last but not least, the combination of downsampling and getting my training generator to best handle the data ended up resulting in the final model that completed the lap successfully, and even my 'lightweight' local version of my model trained on my Macbook Pro's CPU was sufficient. Initially, I had set up my generator to apply batch size only to the lines, and by the time I decided to complete all of the augmentation, it was multiplying that by eight for the number images going into each batch. So, I instead modified my 'generate full augment from lines' function (starting model.py line 357) to divide the batch size by eight, which was the number of images used for each line after augmentation (model.py line 373), and that finally resulted in the model that would stay on the track. 
 
-####2. Final Model Architecture
+Throughout training, I used a TensorBoard callback to monitor training loss and validation loss to check for overfitting. It was through this that I noted while the model was often presented with a small number of epochs (usually 5 - 10 from the Udacity content videos), the convergence of the model appeared to perhaps go past this and didn't appear to split to overfitting until after about 25 epochs in some of the configurations I tried.
+
+Not wanting to potentially miss out on a better model, but not wanting to spend an unnecessary amount of time training either, I ended up setting up additional callbacks:
+* Checkpointing (model.py line 535): I checkpointed the model after each epoch, but only saved the checkpoint if the model improved, guaranteeing I would still have the best model from each improvement point if the epochs really did indeed go too far.
+* Early Stopping (model.py line 539): I included early stopping to stop training the model after 7 epochs of no improvement. 
+* Reduce Learning Rate On Plateau (model.py line 543): While this may have given potential to interfere with the Adam optimizer, I set up the learning rate to reduce by a factor of .1 after the model had not improved for 4 epochs. This seemed to be useful in some configurations I tried, but was not useful in the final model iteration. 
+
+#### 2. Final Model Architecture
 
 The final model architecture (model.py lines 18-24) consisted of a convolution neural network with the following layers and layer sizes ...
 
@@ -114,7 +141,7 @@ Here is a visualization of the architecture (note: visualizing the architecture 
 
 ![alt text][image1]
 
-####3. Creation of the Training Set & Training Process
+#### 3. Creation of the Training Set & Training Process
 
 To capture good driving behavior, I first recorded two laps on track one using center lane driving. Here is an example image of center lane driving:
 
