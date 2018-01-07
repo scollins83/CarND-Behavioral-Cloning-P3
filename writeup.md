@@ -22,10 +22,11 @@ The goals / steps of this project are the following:
 [center_lane_complex]: ./writeup_pictures/complex_track_center_line.jpg "Center Line Complex"
 [red_line_recover_1]: ./writeup_pictures/red_line_recovery_step_1.jpg "Red Line Recovery Image - Step 1"
 [red_line_recover_2]: ./writeup_pictures/red_line_recovery_step_2.jpg "Red Line Recovery Image - Step 2"
-[red_line_recover_3]: ./writeup_pictures/red_line_recovery_step_1.jpg "Red Line Recovery Image - Step 3"
+[red_line_recover_3]: ./writeup_pictures/red_line_recovery_step_3.jpg "Red Line Recovery Image - Step 3"
 [dirt_track_1]: ./writeup_pictures/dirt_track_step_1.jpg "Dirt Track - Step 1"
 [dirt_track_2]: ./writeup_pictures/dirt_track_step_2.jpg "Dirt Track - Step 2"
 [dirt_track_3]: ./writeup_pictures/dirt_track_step_3.jpg "Dirt Track - Step 3"
+[flipped]: ./writeup_pictures/red_line_1_flipped.jpg "Red Line - Flipped"
 [brightness]: ./writeup_pictures/center_brightness.jpg "Brightness"
 [translation]: ./writeup_pictures/center_translation.jpg "Translation"
 [shadow]: ./writeup_pictures/center_shadow.jpg "Shadow"
@@ -171,20 +172,35 @@ I also perennially had issues with the car missing the first corner after the br
 
 While that was concerning for leaking information and potential for overfitting, and as such, in the future, I'd probably plan out different types of recoveries and make sure I can keep those proportional to the full lap center lane driving classes and use a track for simulation that was of similar difficulty that the model had never seen before. 
 
-To augment the data sat, I did several things, all implemented from ideas posed in Yadav's blog post cited earlier. 
+To augment the data sat, I did several things, all implemented from ideas posed in Yadav's blog post cited earlier. Initially, I tried using the built-in Keras ImageGenerator to augment the image, but had better results when I made my own custom function and added in some augementations not available in the Keras package. 
 
 * Adjusting measurement of side images: This transformed images from the two sides into use as recovery images. The images did not change, but the measurements were offset by +/- 0.25 as discussed earlier in the solution design approach section. 
 
 * Flipping the image from left to right, to boost clockwise and counterclockwise viewpoints:
 
+![alt text][red_line_recover_1]
+![alt text][flipped]
+
+* Randomly changing the image brightness/darkness, to allow the model to generalize during different light levels and times of day. 
+
 ![alt text][center_lane_simple]
-![alt text][image7]
+![alt text][brightness]
 
-Etc ....
+* Translating the image to offset a little bit in realistic ways while driving. This didn't change the image much visually, but did change it slightly.
 
-After the collection process, I had X number of data points. I then preprocessed this data by ...
+![alt text][center_lane_simple]
+![alt text][translation]
 
+* Randomly adding a shadow onto the image, to help the model learn that it didn't have to avoid shadows. 
+![alt text][center_lane_simple]
+![alt text][shadow]
 
-I finally randomly shuffled the data set and put Y% of the data into a validation set. 
+After the collection process, I had 9024 number of data points on my lightweight local dataset, and 18014 data points on my larger floyd dataset. These were opened up as color images in the same color space, and were normalized and cropped within the model pipeline itself so this could happen on the GPU. 
 
-I used this training data for training the model. The validation set helped determine if the model was over or under fitting. The ideal number of epochs was Z as evidenced by ... I used an adam optimizer so that manually training the learning rate wasn't necessary.
+However, on my local dataset, the average measurement was -0.01055, and on the floyd dataset, it was at -0.00271, with the total of images between the ranges of -.1 and +.1 much larger than the total of the other images. So, I used random undersampling from the imbalanced-learn (imblearn) package to randomly downsample the record within that range and reduce those records by 10%.
+
+After downsampling, I randomly shuffled the data set and put 20% of the downsampled data into a validation set. 
+
+I used this training data for training the model. The validation set helped determine if the model was over or under fitting. The ideal number of epochs ended up being 3 as this facilitated a model that actually stayed on the road, but it looks like while the ideal number of epochs was typically relatively small, it could vary quite a bit depending on model setup and image augmentation. 
+
+In all, this was a really fun but really challenging project!
