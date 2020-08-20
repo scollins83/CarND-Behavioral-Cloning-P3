@@ -45,7 +45,7 @@ My project includes the following files:
 * model.hdf5 containing a trained convolution neural network 
 * test_model.py for unit tests for the model.py file. NOTE: This file is incomplete for this particular project, 
 but as I've learned more and practiced with TDD a bit more, subsequent projects may have more comprehensive testing. 
-* writeup.md summarizing the results
+* writeup.md summarizing the results.
 
 #### 2. Submission includes functional code
 Using the Udacity provided simulator and my drive.py file, the car can be driven autonomously around the track by executing 
